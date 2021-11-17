@@ -12,9 +12,13 @@ unsigned long randtime; //Variabl für randomisierte Pause
 int minTime = 20; //Minimale Warte Zeit in Sekunden
 int maxTime = 100; //Maximale Warte Zeit in Sekunden
 boolean motorPosition; //0 = retracted / 1 = extended
+boolean isTestMove = 0; //0 = normal operation / 1 = testmove
 
 
 void setup() {
+  //only for debug -> wait 3 seconds for us slow humans to activate serial monitor
+  delay(3000);
+  
   //--initialize--
   //turn on serial communication
   Serial.begin(9600);
@@ -36,13 +40,28 @@ void setup() {
   //print successfull initialization
   Serial.println("Initialized successfully!");
   
-  //wait a few seconds
-  delay(2000);
-
-  //check on-off switch and do testmove if switch is on or turn off motors
+  //check on-off switch and do testmove if switch is on
   if (digitalRead(OnOffSwitchPin) == 0) {
-    //move each direction once to test
-    //print each testmove
+    //print test move state
+    Serial.println("Doing tests moves.");
+    //wait a short time before test moves
+    delay(1000);
+
+    //turning test state mode on
+    isTestMove = 1;
+
+    //doing first test move
+    onState();
+    
+    //doing second test move
+    onState();
+    
+    //print end of test move state
+    Serial.println("Bänkli did both test moves. Proceeding to normal operation.");
+    Serial.println();
+
+    //turning test state mode off
+    isTestMove = 0;
   }
   else {
     //print situation with switch off in setup
@@ -105,9 +124,16 @@ void onState() {
     //print error state
     Serial.println("Both switches activated: Motors turned off, check for mechanical error!");
   }
-  
-  //set random time
-  randtime = random(minTime, (maxTime + 1)) * 1000;
+
+  //calculate random time if no test move
+  if (isTestMove == 0) {
+    //calculate random time
+    randtime = random(minTime, (maxTime + 1)) * 1000;
+  }
+  else {
+    //set waittime between moves to 1 second while doing testmoves
+    randtime = 1000;
+  }
   
   //print waittime
   Serial.print("Bänkli will make its next move in ");
@@ -170,4 +196,5 @@ void moveBackrest(int moveDirection) {
 
   //print motor turn off and move made
   Serial.println("Moved motors to new position and turned them off");
+  Serial.println();
 }
