@@ -1,41 +1,29 @@
-import time
 import pygame
+import time
+import RPi.GPIO as GPIO
 
-# If set to True, use keyboard input for gates
-debugMode = True
-
-if not debugMode:
-    import RPi.GPIO as GPIO
-
-# Pin numbers for the gates
-gate1Pin = 2
-gate2Pin = 3
-
-# The distance between the two gates in centimeters
+# measurement variables
+gate1, gate2 = 0, 0  # 0 = free -- 1 = closed
+gate1Pin, gate2Pin = 2, 3
+currentSpeed, previousSpeed = 10.0, 0.0
 distanceCM = 100
+gateToCheck, stopSignal = 0, 0
+currentTime = 0
 
-# Maximum allowable time for a measurement or display in seconds
-max_measurement_time = 4
-max_display_time = 1
+maxMeasurementTime = 4
+maxDisplayTime = 1
+activeMeasurement = False
+measurementDelay = 100
 
-# Measurement delay for debouncing in seconds
-measurement_delay = 0.1
+# styling variables
+speed = 0.0  # measured Speed
+unit = "km/h"
+fontScalerSpeed = 3
+textMiddleScaler = 40
+textSpacingScaler = 30
 
-# Speed related variables
-speed = 0
-current_speed = 0
-previous_speed = 0
-
-# Timing variables
-start_time = 0
-display_start_time = 0
-
-# Gate status variables
-gate1 = 0
-gate2 = 0
-gate_to_check = 0
-active_measurement = False
-
+# debug mode
+debugMode = True
 
 def setup():
     if not debugMode:
@@ -43,82 +31,72 @@ def setup():
         GPIO.setup(gate1Pin, GPIO.IN)
         GPIO.setup(gate2Pin, GPIO.IN)
 
+def debounce_read(pin, num_samples=5, delay_time=10):
+    """Read input from pin taking into account debounce"""
+    measurements = [GPIO.input(pin) for _ in range(num_samples)]
+    return 1 if measurements.count(1) > num_samples / 2 else 0
 
 def update_speed():
-    global current_speed, previous_speed, display_start_time
-
+    global currentSpeed, previousSpeed, speed, activeMeasurement
     measure()
 
-    if current_speed != previous_speed:
-        display_start_time = time.time()  # Reset and start the display timer
-        set_speed()
-        previous_speed = current_speed
-        time.sleep(measurement_delay)  # Delay for debouncing
+    if currentSpeed != previousSpeed:
+        previousSpeed = currentSpeed
+        speed = currentSpeed
+        time.sleep(measurementDelay / 1000.0)  # sleep expects time in seconds
 
-    if not active_measurement:
+    if not activeMeasurement:
         check_display_time()
 
-
 def check_display_time():
-    global current_speed, previous_speed, display_start_time
+    global currentSpeed, previousSpeed
+    if currentSpeed != 0 and display_timer_elapsed > maxDisplayTime:
+        previousSpeed = currentSpeed
+        currentSpeed = 0
 
-    if current_speed != 0 and time.time() - display_start_time > max_display_time:
-        previous_speed = current_speed
-        current_speed = 0  # Set current speed to 0
-        display_start_time = 0  # Reset display timer
-
-
-def set_speed():
-    global speed, current_speed
-    speed = current_speed
-
-
-def calculate_speed(current_time):
-    # convert cm to m for the calculation
-    distanceM = distanceCM / 100
-    return distanceM / current_time * 3.6  # Calculate speed and convert from m/s to km/h
-
+def calculate_speed():
+    return abs((distanceCM / 100) / (currentTime / 10) * 3.6)  # cm to m, microsec to sec, m/sec to km/h
 
 def measure():
-    global gate1, gate2, start_time, active_measurement, gate_to_check, current_speed
+    global gate1, gate2, stopSignal, currentTime, previousSpeed, currentSpeed, activeMeasurement, gateToCheck
+    gate1 = debounce_read(gate1Pin) if not debugMode else gate1
+    gate2 = debounce_read(gate2Pin) if not debugMode else gate2
 
-    if not debugMode:
-        gate1 = GPIO.input(gate1Pin)
-        gate2 = GPIO.input(gate2Pin)
+    stopSignal = gate1 if gateToCheck == 1 else gate2 if gateToCheck == 2 else 0
 
-    # Debouncing the input
-    time.sleep(measurement_delay)
-    if not debugMode and (gate1 != GPIO.input(gate1Pin) or gate2 != GPIO.input(gate2Pin)):
-        return
+    if not activeMeasurement and (gate1 == 1 or gate2 == 1):
+        speed_timer_start = time.time()
+        gateToCheck = 2 if gate1 == 1 else 1
+        activeMeasurement = True
 
-    if not active_measurement:
-        if gate1 == 1 or gate2 == 1:
-            start_time = time.time()
-            gate_to_check = 2 if gate1 == 1 else 1
-            active_measurement = True
-    else:
-        stop_signal = gate1 if gate_to_check == 1 else gate2
-        if stop_signal == 1:
-            current_speed = calculate_speed(time.time() - start_time)
-            active_measurement = False
-            gate_to_check = 0
-        elif time.time() - start_time > max_measurement_time:
-            start_time = 0
-            active_measurement = False
+    elif activeMeasurement:
+        if stopSignal == 1:
+            currentTime = (time.time() - speed_timer_start) * 1e6  # convert sec to microsec
+            previousSpeed = currentSpeed
+            currentSpeed = calculate_speed()
+            activeMeasurement = False
+            gateToCheck = 0
 
+        elif (time.time() - speed_timer_start) > maxMeasurementTime:
+            speed_timer_start = time.time()
+            activeMeasurement = False
 
 def draw(screen):
+    global speed
     screen.fill((0, 0, 0))
 
-    font = pygame.font.Font(None, 100)
-    text_surface = font.render(f"{speed:.2f} km/h", True, (255, 255, 255))
-    text_rect = text_surface.get_rect(center=(screen.get_width() / 2, screen.get_height() / 2))
+    if pygame.font:
+        font = pygame.font.Font(None, int(screen.get_height() / fontScalerSpeed))
+        text = "{:.2f} {}".format(speed, unit)
+        text_surface = font.render(text, True, (255, 255, 255))
 
-    screen.blit(text_surface, text_rect)
+        text_rect = text_surface.get_rect(center=(screen.get_width() / 2, screen.get_height() / 2))
+        screen.blit(text_surface, text_rect)
+
     pygame.display.flip()
 
-
 def main():
+    global gate1, gate2
     setup()
 
     pygame.init()
@@ -138,7 +116,6 @@ def main():
 
         update_speed()
         draw(screen)
-
 
 if __name__ == "__main__":
     main()
