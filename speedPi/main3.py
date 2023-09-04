@@ -1,13 +1,13 @@
 import time
 import pygame
 
-pygame.init()
 
 # Uncomment this when you are ready to use GPIO
 #import RPi.GPIO as GPIO
 
 debugMode = True
-debounceDelay = 0.01
+debounceDelay = 0.01 #delay in seconds
+measurementDelay = 1 #delay in seconds
 
 gate1Pin = 17
 gate2Pin = 27
@@ -22,11 +22,13 @@ def readPin(pin):
     if debugMode:
         if pin == 1:
             if pygame.key.get_pressed()[pygame.K_1]:
+                #print("1 key pressed")
                 return 1
             else:
                 return 0
         elif pin == 2:
             if pygame.key.get_pressed()[pygame.K_2]:
+                #print("2 key pressed")
                 return 1
             else:
                 return 0
@@ -94,7 +96,8 @@ class SpeedGate:
         self.currentSpeed = 0
         self.previousSpeed = 0
         self.distanceM = 1 # distance in meters
-        self.state = 0 # 0 = idle, 1 = measuring
+        self.state = 1 # 0 = idle, 1 = measuring
+        self.lastMeasurement = 0
         
     def update(self):
         self.checkGate()
@@ -102,7 +105,8 @@ class SpeedGate:
         if self.state == 0:
             return
         elif self.state == 1:
-            self.measure(timerSpeed)
+            if time.time() - self.lastMeasurement > measurementDelay:
+                self.measure(timerSpeed)
             return
 
     def changeState(self, state):
@@ -116,7 +120,9 @@ class SpeedGate:
         self.gate2 = debounce_read(2)
 
     def calculateSpeed(self, timerSpeed):
+        self.previousSpeed = self.currentSpeed
         self.currentSpeed = self.distanceM / timerSpeed.deltaT * 3.6
+        print("current speed: ", self.currentSpeed)
     
     def measure(self, timerSpeed):
         #timer not started
@@ -126,12 +132,14 @@ class SpeedGate:
                 timerSpeed.reset()
                 timerSpeed.start()
                 self.gateTriggered = 1
+                print("gate 1 triggered - start timer")
                 return
             #case gate2 is triggered
             elif self.gate2 == 1:
                 timerSpeed.reset()
                 timerSpeed.start()
                 self.gateTriggered = 2
+                print("gate 2 triggered - start timer")
                 return
         #timer started
         elif timerSpeed.running == True:
@@ -139,6 +147,7 @@ class SpeedGate:
                 if self.gate2 == 1:
                     timerSpeed.stop()
                     self.calculateSpeed(timerSpeed)
+                    self.lastMeasurement = time.time()
                     #self.changeState(0)
                     return
                 else:
@@ -147,6 +156,7 @@ class SpeedGate:
                 if self.gate1 == 1:
                     timerSpeed.stop()
                     self.calculateSpeed(timerSpeed)
+                    self.lastMeasurement = time.time()
                     #self.changeState(0)
                     return
                 else:
@@ -175,8 +185,7 @@ timerDisplay = Timer()
 #instance of the speedgate class
 speedGate = SpeedGate()
 
-#instance of the display class
-#displaySpeed = DisplaySpeed()
+
 
 
 def main():
@@ -193,10 +202,7 @@ def main():
                 pygame.quit()
                 return
         speedGate.update()
-        #displaySpeed.render(speedGate)
         draw(screen, speedGate)
-        print(i)
-        i+=1
 
 if __name__ == "__main__":
     main()
