@@ -1,12 +1,14 @@
 <h1>Instructions for autostart on Raspberry Pi w/ Raspbian</h1>
-Make your script executable.
+<h2>1. Make your script executable.</h2>
 
 Open the terminal and navigate to the directory containing your script, then execute:
 
 ```
 chmod +x my_script.py
-Add to LXDE autostart.
 ```
+
+<h2>2. Add to LXDE autostart.</h2>
+
 Open the autostart file in a text editor with:
 
 ```
@@ -33,7 +35,7 @@ Once you're in the editor, add the following line at the end of the file:
 
 Save and close the file. If you used nano, you can save by pressing CTRL + O, hit Enter, and then exit with CTRL + X.
 
-Restart your Raspberry Pi.
+<h2>3. Restart your Raspberry Pi.</h2>
 
 Restart the Pi with:
 
