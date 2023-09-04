@@ -4,7 +4,7 @@
 Open the terminal and navigate to the directory containing your script, then execute:
 
 ```
-chmod +x my_script.py
+chmod +x main.py
 ```
 
 <h2>2. Add to LXDE autostart.</h2>
@@ -30,7 +30,7 @@ touch ~/.config/lxsession/LXDE-pi/autostart
 Once you're in the editor, add the following line at the end of the file:
 
 ```
-@/path/to/your/python3 /path/to/your/my_script.py
+@/path/to/your/python3 /path/to/your/script/main.py
 ```
 
 Save and close the file. If you used nano, you can save by pressing CTRL + O, hit Enter, and then exit with CTRL + X.
