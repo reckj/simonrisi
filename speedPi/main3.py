@@ -123,7 +123,6 @@ class SpeedGate:
     def checkGate(self):
         self.gate1 = debounce_read(1)
         self.gate2 = debounce_read(2)
-        print("gate1: ", self.gate1 , " gate2: ", self.gate2)
 
     def calculateSpeed(self, timerSpeed):
         self.previousSpeed = self.currentSpeed
