@@ -123,6 +123,7 @@ class SpeedGate:
     def checkGate(self):
         self.gate1 = debounce_read(1)
         self.gate2 = debounce_read(2)
+        print("gate1: ", self.gate1 , " gate2: ", self.gate2)
 
     def calculateSpeed(self, timerSpeed):
         self.previousSpeed = self.currentSpeed
@@ -208,7 +209,11 @@ def main():
     # hide the mouse cursor
     pygame.mouse.set_visible(False)
     # set the pygame window to fullscreen
-    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    if not debugMode:
+        screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    else:
+        screen = pygame.display.set_mode((800, 480))
+
 
     # main loop
     while True:
@@ -221,7 +226,7 @@ def main():
                 return
         speedGate.update()
         draw(screen, speedGate)
-        
+
 # run the main function only if this module is executed as the main script
 if __name__ == "__main__":
     main()
