@@ -5,19 +5,23 @@ import pygame
 # Uncomment this when you are ready to use GPIO
 #import RPi.GPIO as GPIO
 
+# set debug mode to True to use keyboard input instead of GPIO
 debugMode = True
 debounceDelay = 0.01 #delay in seconds
 measurementDelay = 1 #delay in seconds
+measurementTimeout = 4 #timeout in seconds
 
+# input pins
 gate1Pin = 17
 gate2Pin = 27
 
 def setup():
     if not debugMode:
         GPIO.setmode(GPIO.BCM)
-        GPIO.setup(gate1Pin, GPIO.IN)
-        GPIO.setup(gate2Pin, GPIO.IN)
+        GPIO.setup(gate1Pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(gate2Pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+#function that reads the pin and returns a 1 if the pin is high and a 0 if the pin is low
 def readPin(pin):
     if debugMode:
         if pin == 1:
@@ -143,6 +147,13 @@ class SpeedGate:
                 return
         #timer started
         elif timerSpeed.running == True:
+            #check if measurement timed out
+            if timerSpeed.getTime() > measurementTimeout:
+                timerSpeed.stop()
+                print("measurement timed out")
+                self.currentSpeed = 0
+                print("current speed: ", self.currentSpeed)
+                return
             if self.gateTriggered == 1:
                 if self.gate2 == 1:
                     timerSpeed.stop()
