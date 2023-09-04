@@ -201,19 +201,27 @@ speedGate = SpeedGate()
 
 
 def main():
+    # setup the GPIO pins
     setup()
-
+    # initialize pygame
     pygame.init()
+    # hide the mouse cursor
     pygame.mouse.set_visible(False)
-    screen = pygame.display.set_mode((600, 300), pygame.RESIZABLE)
+    # set the pygame window to fullscreen
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 
+    # main loop
     while True:
+        if pygame.key.get_pressed()[pygame.K_x]:
+            pygame.quit()
+            sys.exit()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 return
         speedGate.update()
         draw(screen, speedGate)
-
+        
+# run the main function only if this module is executed as the main script
 if __name__ == "__main__":
     main()
