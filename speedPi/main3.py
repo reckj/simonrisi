@@ -1,5 +1,6 @@
 import time
 import pygame
+import sys 
 
 
 # Uncomment this when you are ready to use GPIO
@@ -206,7 +207,6 @@ def main():
     pygame.mouse.set_visible(False)
     screen = pygame.display.set_mode((600, 300), pygame.RESIZABLE)
 
-    i=1
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
