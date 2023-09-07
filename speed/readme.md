@@ -1,5 +1,7 @@
 <h1>Code Logic</h1>
 <h2>General</h2>
+<h3>Miscallaneous</h3>
+Program can be exited with "x" Key
 <h3>Libraries</h3>
 Code is written in Python 3.7.3 and uses the following libraries:
 <ul>
