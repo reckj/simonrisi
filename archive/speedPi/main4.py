@@ -4,28 +4,21 @@ import sys
 
 
 # Uncomment this when you are ready to use GPIO
-import RPi.GPIO as GPIO
-
+#import RPi.GPIO as GPIO
 
 # set debug mode to True to use keyboard input instead of GPIO
-debugMode = False
+debugMode = True
 debounceDelay = 0.01 #delay in seconds
 measurementDelay = 1 #delay in seconds
 measurementTimeout = 4 #timeout in seconds
-gateDistance = 1 #distance between the gates in meters
 
 # input pins
-gate1Pin = 40
-gate2Pin = 38
-
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(gate1Pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(gate2Pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
+gate1Pin = 17
+gate2Pin = 27
 
 def setup():
     if not debugMode:
-        GPIO.setmode(GPIO.BOARD)
+        GPIO.setmode(GPIO.BCM)
         GPIO.setup(gate1Pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         GPIO.setup(gate2Pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
@@ -45,14 +38,10 @@ def readPin(pin):
             else:
                 return 0
     else:
-        if pin == 1:
-            return GPIO.input(gate1Pin)
-        elif pin == 2:
-            return GPIO.input(gate2Pin)
-        
+        return GPIO.input(pin)
 
 #debounce function that checks if the gate is triggered 5 times in succession with a small delay and returns a 1 if it is triggered and 0 if it is not triggered
-def debounceRead(gate):
+def debounce_read(gate):
     count = 0
     for i in range(5):
 
@@ -111,7 +100,7 @@ class SpeedGate:
         self.gateTriggered = 0 # 0 = no gate triggered, 1 = gate 1 triggered, 2 = gate 2 triggered
         self.currentSpeed = 0
         self.previousSpeed = 0
-        self.distanceM = gateDistance # distance in meters
+        self.distanceM = 1 # distance in meters
         self.state = 1 # 0 = idle, 1 = measuring
         self.lastMeasurement = 0
         
@@ -132,8 +121,8 @@ class SpeedGate:
         return self.currentSpeed
     
     def checkGate(self):
-        self.gate1 = debounceRead(1)
-        self.gate2 = debounceRead(2)
+        self.gate1 = debounce_read(1)
+        self.gate2 = debounce_read(2)
 
     def calculateSpeed(self, timerSpeed):
         self.previousSpeed = self.currentSpeed
@@ -214,7 +203,6 @@ speedGate = SpeedGate()
 def main():
     # setup the GPIO pins
     setup()
-    GPIO.setmode(GPIO.BOARD)
     # initialize pygame
     pygame.init()
     # hide the mouse cursor
@@ -222,7 +210,6 @@ def main():
     # set the pygame window to fullscreen
     if not debugMode:
         screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-        #screen = pygame.display.set_mode((800, 480))
     else:
         screen = pygame.display.set_mode((800, 480))
 
@@ -238,8 +225,6 @@ def main():
                 return
         speedGate.update()
         draw(screen, speedGate)
-
-    GPIO.cleanup()
 
 # run the main function only if this module is executed as the main script
 if __name__ == "__main__":
