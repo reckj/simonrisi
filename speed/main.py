@@ -189,7 +189,7 @@ class SpeedGate:
 def draw(screen, speedGate):
     screen.fill((0, 0, 0))
     unit = "km/h"
-    fontScalerSpeed = 4
+    fontScalerSpeed = 2
 
     if pygame.font:
         font = pygame.font.Font(None, int(screen.get_height() / fontScalerSpeed))
